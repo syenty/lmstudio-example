@@ -1,7 +1,12 @@
 import os
+import time
+from typing import TypeVar
 
 import lmstudio as lms
 from dotenv import load_dotenv
+from pydantic import BaseModel
+
+T = TypeVar("T", bound=BaseModel)
 
 load_dotenv()
 
@@ -9,9 +14,11 @@ load_dotenv()
 class LMClient:
     """LM Studio 클라이언트 래퍼 클래스"""
 
-    def __init__(self, model_name: str | None = None):
+    def __init__(self, model_name: str | None = None, show_time: bool = True):
         # 우선순위: 인자 > 환경변수 > 자동선택
         self.model_name = model_name or os.getenv("LM_MODEL_NAME")
+        self.show_time = show_time
+        self.last_elapsed = 0.0
         self._model = None
 
     def __enter__(self):
@@ -29,13 +36,44 @@ class LMClient:
         """프롬프트에 대한 응답 생성"""
         if self._model is None:
             raise RuntimeError("LMClient must be used within a context manager")
-        return self._model.respond(prompt)
+
+        start = time.time()
+        result = self._model.respond(prompt)
+        self.last_elapsed = time.time() - start
+
+        if self.show_time:
+            print(f"⏱️ 응답 시간: {self.last_elapsed:.2f}초")
+
+        return result
 
     def complete(self, prompt: str) -> str:
         """텍스트 완성"""
         if self._model is None:
             raise RuntimeError("LMClient must be used within a context manager")
-        return self._model.complete(prompt)
+
+        start = time.time()
+        result = self._model.complete(prompt)
+        self.last_elapsed = time.time() - start
+
+        if self.show_time:
+            print(f"⏱️ 응답 시간: {self.last_elapsed:.2f}초")
+
+        return result
+
+    def respond_structured(self, prompt: str, response_model: type[T]) -> T:
+        """Pydantic 모델로 구조화된 응답 생성"""
+        if self._model is None:
+            raise RuntimeError("LMClient must be used within a context manager")
+
+        start = time.time()
+        result = self._model.respond(prompt, response_format=response_model)
+        self.last_elapsed = time.time() - start
+
+        if self.show_time:
+            print(f"⏱️ 응답 시간: {self.last_elapsed:.2f}초")
+
+        # parsed dict를 Pydantic 모델로 변환
+        return response_model.model_validate(result.parsed)
 
     @staticmethod
     def list_models() -> list[str]:

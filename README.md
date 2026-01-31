@@ -35,3 +35,9 @@ print(summary)
 ```
 
 4️⃣ **간단한 챗봇**
+```python
+with LMClient()as lm:
+    answer = lm.respond("안녕, 오늘 기분은 어때?")
+print(answer)
+
+```

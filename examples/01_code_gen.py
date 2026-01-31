@@ -3,7 +3,9 @@ from utils import LMClient
 
 with LMClient() as lm:
     code = lm.respond("""
-로또 번호 생성하는 Python 코드 만들어줘. 1~45 중 6개 숫자를 중복 없이 뽑아야 해.
+로또 번호 생성하는 Python 코드 만들어줘.
+- 1~45 중 6개 숫자를 중복 없이 뽑기
+- 오름차순 정렬해서 출력
 
 반드시 지켜야 할 규칙:
 - 순수 Python 코드만 출력

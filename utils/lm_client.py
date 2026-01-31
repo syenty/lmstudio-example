@@ -1,8 +1,12 @@
 import os
 import time
+from typing import TypeVar
 
 import lmstudio as lms
 from dotenv import load_dotenv
+from pydantic import BaseModel
+
+T = TypeVar("T", bound=BaseModel)
 
 load_dotenv()
 
@@ -55,6 +59,21 @@ class LMClient:
             print(f"⏱️ 응답 시간: {self.last_elapsed:.2f}초")
 
         return result
+
+    def respond_structured(self, prompt: str, response_model: type[T]) -> T:
+        """Pydantic 모델로 구조화된 응답 생성"""
+        if self._model is None:
+            raise RuntimeError("LMClient must be used within a context manager")
+
+        start = time.time()
+        result = self._model.respond(prompt, response_format=response_model)
+        self.last_elapsed = time.time() - start
+
+        if self.show_time:
+            print(f"⏱️ 응답 시간: {self.last_elapsed:.2f}초")
+
+        # parsed dict를 Pydantic 모델로 변환
+        return response_model.model_validate(result.parsed)
 
     @staticmethod
     def list_models() -> list[str]:
